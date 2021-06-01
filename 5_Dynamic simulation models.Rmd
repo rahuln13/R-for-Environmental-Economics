@@ -1,0 +1,172 @@
+---
+title: 'Dynamic simulation models'
+author: "Vikram Dayal and M Rahul"
+output: pdf_document
+---
+
+Nonlinear dynamics can be complex, as we can see in Figure \ref{fig:sim1} of a simulation with the equation
+$X_{t + 1} = X_{t} + (rX_{t}(1 - (X_{t}/K)))$, $r = 2.6, K = 100, X_{0} = 40$. 
+
+```{r, echo = F, message = F, warning=FALSE}
+library(tidyverse)
+num <- 40
+X <- numeric(num)
+K <- 100
+r <- 2.6
+X[1] <- 40
+for (i in 2:num) {
+  X[i] <- X[i - 1] + ( r*X[i - 1]* (
+    1 - ( X[i - 1] /K)) )
+}
+Xdat <- data.frame(X, time = 1:num)
+```
+
+```{r, echo = F, fig.width = 4, fig.height = 3, fig.cap = "\\label{fig:sim1}simulated logistic difference equation"}
+gg1 <- ggplot(Xdat, aes(x = time, 
+                 y = X)) +
+  geom_line()
+gg1
+```
+
+A key issue in environmental economics concerns biological invasions. Biologically invasive species include *pests and pathogens*, plants and animals, which invade and take over ecological systems, harming the production of ecosystem services^[see Perrings et al. 2002 and Dayal 2007]
+
+Epidemiologists, ecologists, economists, and ecological economists build on `workhorse' models of infectious disease epidemiology^[see Stevens 2010.].
+
+
+We now see how we can simulate a difference equation in R. Consider a simple difference equation:
+
+$X_{t + 1} = X_{t} + 2$. 
+
+Let $X_{1}$ = 3. 
+
+Then,
+
+$X_{2} = X_{1} + 2 = 5$
+
+$X_{3} = X_{2} + 2 = 7$
+
+
+So we can numerically simulate a difference equation by iteration. This means we can use a for loop.
+
+
+```{r}
+X <- numeric(3)
+X[1] <- 3
+for(i in 2:3){
+  X[i] <- X[i - 1] + 2
+}
+X
+
+```
+
+We consider a simple SIR model in R. Here we will focus on qualitative insight. An SIR model consists of: 
+
+  **Susceptible** Individuals who are not yet infected, but may be tomorrow (S). 
+  **Infected** Individuals who are infected (I).
+  **Resistant** Individuals who are resistant (R). 
+  
+
+  
+Note that total individuals, N is given by $N = S + I + R$. People move through the compartments: $S \rightarrow I \rightarrow R$. The dynamics are easier to think of if we consider two periods: $newI_{2} = \beta I_{1} S_{1}$, $R_{2} = \gamma I_{1}$. 
+
+We now set up for our simulation in R. 
+```{r}
+num <- 100
+N <- 1e6
+S <- numeric(num)
+S[1] <- N
+I <- numeric(num)
+I[1] <- 10
+nI <- numeric(num)
+Beta <- 4.5e-07
+Measures <- 1
+R <- numeric(num)
+Gamma <- 1/5
+```
+
+We can use a 'for loop'
+
+```{r}
+for(i in 2:num) {
+
+nI[i] <- Beta*Measures * S[i -1] * I[i -1]
+
+S[i] <- S[i - 1] - nI[i]
+
+R[i] <- Gamma * I[i - 1]
+
+I[i] <- I[i - 1] + nI[i] - R[i]
+
+}
+```
+
+We collect the values. 
+
+```{r, message = F, warning = F}
+Time <- 1:num
+SIR <- data.frame(S, I, nI, R, Time)
+library(tidyverse)
+```
+
+We plot the results.
+
+
+```{r, fig.width = 3, fig.height=2, fig.cap = "Proportion of infected"}
+ggplot(SIR, aes(x = Time, y = I/N)) +
+  geom_line()
+```
+
+We create a function that allows us to vary $\beta$. 
+
+```{r}
+SIRfunc <- function(Measures = 1) {
+  num <- 100
+N <- 1e6
+S <- numeric(num)
+S[1] <- N
+I <- numeric(num)
+I[1] <- 10
+nI <- numeric(num)
+Beta <- 4.5e-07
+#Measures <- 1
+R <- numeric(num)
+Gamma <- 1/5
+
+for(i in 2:num) {
+
+nI[i] <- Beta*Measures * S[i -1] * I[i -1]
+
+S[i] <- S[i - 1] - nI[i]
+
+R[i] <- Gamma * I[i - 1]
+
+I[i] <- I[i - 1] + nI[i] - R[i]
+
+}
+
+Time <- 1:num
+SIR <- data.frame(S, I, nI, R, Time)
+
+library(tidyverse)
+
+ggplot(SIR, aes(x = Time, 
+                    y = I/N))  +
+ geom_line()
+
+}
+```
+
+We use the function. 
+
+```{r, fig.width = 3, fig.height = 2, fig.cap = "Proportion of infected, with beta = 0.8"}
+SIRfunc(0.8)
+```
+
+The basic model can be elaborated in different ways. 
+
+  * Make it more detailed, add E, so SEIR. Two patches, mobility between patches. 
+  * Provide a tool (Shiny) so non-specialists can play with different settings of parameters and see resulting scenarios. 
+  * Use a calibration approach, take parameters from literature etc.
+  * Explore mathematical properties: stability, see how dynamics change with parameters
+  * Use for detailed predictions
+  * Fit to data, likelihood or Bayesian approaches. 

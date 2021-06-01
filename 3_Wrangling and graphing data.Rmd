@@ -1,0 +1,205 @@
+---
+title: "Wrangling and graphing"
+author: "Vikram Dayal and M Rahul"
+output: pdf_document
+---
+
+We feel that R is very good for wrangling and graphing data. With the *tidyverse* package, we can wrangle the data in a way that facilitates the creation of graphs that both illuminate and communicate. Hadley Wickham's doctoral thesis was on the grammar of graphics, and he designed the *ggplot2* package, one of the most downloaded R packages, with this understanding. We recommend using the *ggplot2* package because (1) it works well with the wrangling functions in *tidyverse*, (2) it is used by other package developers in their packages, and (3) it makes very good graphs by default, without requiring much tinkering, and yet is fairly customisable. 
+
+Duflo et al. (2013a, 2013b) undertake an impact evaluation of an environmental audit scheme in Gujarat, India, following such a system. We will use their study, the data and the graphs, to illustrate how we can wrangle and graph data. In this case, we were able to access the data and the codes, but even so, it still took some effort to reproduce the results. In the graphs that we have reproduced here, our efforts are largely consistent with the authors' graphs in substance, though not as much in appearance. 
+
+The study by Duflo et al. (2013a, 2013b) illustrates the issue of informational asymmetries between regulated industrial plants and the environmental regulators. Appropriately designed incentive mechanisms combined with reforms in monitoring methods may improve compliance by regulated firms. A common practice in environmental regulation of firms is audits by third party auditors who are paid by the under regulation firms to report on their emission levels; monitoring of auditors being minimal. This, as one would assume, leads to a conflict of interest, with the quality of audit reports likely to suffer. Duflo et al. (2013a, 2013b) undertake an impact evaluation of an environmental audit scheme in Gujarat following such a system. They find that such an arrangement encourages corruption and misreporting of industrial plant emissions. The authors suggest an alternative incentive mechanism that encourages accurate reporting.
+
+For the study, the authors randomly assigned the firms regulated under the audit scheme into treatment and control groups. The control group continued with the prevailing regulation mechanism. In the treatment group the alternative regulation mechanism was implemented. Under this scheme, auditors, who were paid from a central pool of funds rather than by the firms, were randomly assigned to plants. Out of 473 audit-eligible plants in Ahmedabad and Surat 233 were exposed to the new system and the remaining acted as the control group. Backchecks were organised in 20 per cent of audits. In the second year, auditors working in the treatment group were paid a bonus for accurate reporting.
+
+We first load some packages. 
+
+```{r, warning = F, message =F}
+library(tidyverse)
+library(knitr)
+library(haven) # reads stata files
+```
+
+We read in the data.The data for the following section (ABbySample_reshaped.dta and ABbyParameter.dta) can be downloaded from https://doi.org/10.7910/DVN/FORDEN and can be saved in a data folder.
+
+```{r}
+ABbySample_reshaped <- 
+  read_dta("data/ABbySample_reshaped.dta")
+glimpse(ABbySample_reshaped$aud_treatment)
+```
+
+The audit treatment variable has been read in as a character variable, we will convert it to a categorical variable or a factor variable. Also zero is the control group and one is the treatment group so we provide this information to R. 
+
+```{r}
+ABby <- ABbySample_reshaped %>%
+  mutate(treat = 
+           factor(aud_treatment)) %>% 
+  mutate(treat = fct_recode(treat,
+      "control" = "0",
+      "treatment" = "1") ) 
+```
+
+We do likewise for the backcheck variable. 
+
+```{r}
+ABby <- ABby %>%
+  mutate(back = 
+           factor(backcheck)) %>% 
+  mutate(back = fct_recode(back,
+                           "audit" = "0",
+                           "backcheck" = "1") ) 
+```
+
+We now produce a graph that we feel gets the key finding of the study. When plants hire auditors, auditors report pollution levels that are just below the standard prescribed in the regulation (Figure \ref{fig:cond_dist}).
+
+```{r, fig.width = 4, fig.height = 3, fig.cap = "\\label{fig:cond_dist}Conditional distributions"}
+ABby %>%
+  filter(par == "spm",
+         boiler == 1,
+         midline == 1, pol <400) %>%
+  ggplot(aes(x = pol)) + 
+  geom_density() + 
+  geom_vline(xintercept = 150,
+             linetype = "dashed") +
+  facet_grid(treat ~ back) +
+  theme(legend.position = "bottom")
+```
+
+
+We now remove this data set before using another of the various data sets used by the authors. 
+
+```{r}
+rm(ABby, ABbySample_reshaped) # rm removes
+```
+
+We can view graphs as helping us make comparisons. We will first graph the accuracy of reporting by the auditors in the control group plants. So we will be comparing their reports on average with a benchmark accuracy of zero and compare the average reporting across auditors. We have observations of reports by auditors, so we first have to estimate the means by auditor. We use regression with dummy variables for each auditor. 
+
+We read in the data. 
+
+```{r}
+data <- read_dta("data/ABbyParameter.dta")
+```
+
+We will look at auditor accuracy among those in the control group, and for comparable readings among their reports.
+
+```{r}
+dat1 <- data %>%
+  filter(aud_treatment==0 &
+         boiler == 1 | aud_treatment==0 &
+           final == 1)
+```
+
+
+We create factor variables. 
+
+```{r}
+dat1 <- dat1 %>%
+  mutate(plantidfac = factor(plantid),
+      auditorid_fac = factor(auditorid))
+```
+
+
+We now use the *estimatr* function. This is a convenient way of getting the cluster robust standard errors so beloved to economists. 
+
+```{r}
+library(estimatr)
+m1 <- lm_robust(diff_std ~ reg_abd + auditorid_fac -1, 
+  data=dat1, clusters = plantidfac)
+```
+
+We will be wanting to extract coefficients and confidence intervals from the model object. For this, the *broom* package is convenient; it creates a dataframe from which extraction is easy. We also select rows corresponding to the auditors only.
+
+```{r}
+library(broom)
+d1 <- tidy(m1)
+d1[1:3]
+d1 <- d1[2:18,]
+```
+
+
+Our coefficient estimates are estimates of accuracy; so we rename the estimates, and arrange. 
+
+```{r}
+d1 <- d1 %>%
+  arrange(estimate) %>%
+  rename(Auditor_accuracy = estimate) %>%
+  mutate(rank = 1:17)
+#suppress output or print of d1
+```
+
+We are now ready to plot.
+
+```{r, fig.width = 4, fig.height = 3, fig.cap = "\\label{fig:aud_acc}Auditor accuracy"}
+ggplot(d1, aes(x=rank, 
+        y=Auditor_accuracy)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin=conf.low, 
+                    ymax=conf.high),
+                width = 0.2) +
+  geom_hline(yintercept = 0,
+             linetype = "dotted")
+```
+
+The accuracy estimates for 15 out of 17 auditors were negative, with considerable variation in the precision of the estimates between auditors, as reflected in the width of the confidence interval (Figure \ref{fig:aud_acc}). The most inaccurate auditor's estimate is far more precisely estimated than the second most inaccurate auditor's estimate. The same holds when looking at the most and second most accurate auditor. 
+
+```{r}
+rm(dat1, data, m1, d1)
+```
+
+We will now examine, across pollutants, the gap between audit reports and backchecks between the treatment and control groups. 
+
+```{r}
+data1 <- read_dta("data/ABbySample_reshaped.dta")
+```
+
+We filter and create factor variables. 
+
+```{r}
+dat3B <- data1 %>% 
+  filter(midline==1, boiler==1|final==1,
+    par=="spm"|par=="tds"|par=="bod") %>%
+  mutate(aud_treatment = factor(aud_treatment),
+         par = factor(par),
+         backcheck = factor(backcheck))
+head(dat3B)
+```
+
+We calculate means by subgroups. 
+
+```{r}
+dat4 <- dat3B %>%
+  group_by(aud_treatment, par,
+           backcheck) %>%
+  summarise(mpol = mean(pol))
+dat4
+```
+
+We can use kable for a quick table. 
+
+```{r}
+dat4 %>%
+  arrange(par, aud_treatment, 
+          backcheck) %>%
+  select("par", "aud_treatment",
+         "backcheck", "mpol") %>%
+  kable()
+```
+
+We create a plot. 
+
+```{r, fig.width = 5, fig.height = 3, fig.cap = "\\label{fig:gap}Backcheck audit gap"}
+ggplot(dat4, aes(x = aud_treatment,
+                 y = mpol,
+                 col = backcheck,
+                 fill = backcheck)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  facet_wrap(~ par, scales = "free_y",
+             ncol = 3) 
+```
+
+We can see in Figure \ref{fig:gap} that the gap between the backcheck and audit has reduced for modified audit compared to the standard audit, showing the efficacy of the new scheme (The mean values that we get are slightly different from those reported in the report).
+
+```{r}
+rm(data1, dat3B, dat4)
+```

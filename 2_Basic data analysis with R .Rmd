@@ -1,0 +1,125 @@
+---
+title: "Basic data analysis with R"
+author: "Vikram Dayal and M Rahul"
+output: pdf_document
+---
+
+
+We will now illustrate some basic data analysis in R. The data analysis workflow involves (1) reading in the data, (2) wrangling or working with the data, (3) graphing the data, and (4) fitting models to the data. 
+
+We work with a paper by Zahno et al. (2020) on the effect of health awareness on the choice of cooking fuel in Rajasthan, India. The problem of indoor air pollution is a critical one in developing countries, and is a key issue in environmental health^[See Jeuland et al. (2015) and Dayal (2014).]. The authors use an experimental research design to study the effect. There is a trend for empirical investigations of effect to use experiments and related designs in economics. Also there is emphasis on reproducibility of research--the PLoS ONE website has the data and code. 
+
+The authors carried out a survey of 554 households in the rural part of Bikaner district in Rajasthan. They randomly assigned health information to the treatment group and general, non-health related information on LPG to the control group.
+
+We will do only a brief selection of the data analysis of Zahno et al.(2020); our purpose is to deliberately focus on a few key functions in R, and to show the use of the tidyverse approach, which is rather popular these days in the R community. 
+
+Our first task is to read in the data. We can first download the data for our analysis from https://doi.org/10.1371/journal.pone.0231931.s006 and save it in our data folder. We can use the Import Dataset tab in RStudio or use a command. Because we have a stata dataset (*wtp_lpg.dta*), we use the *read_dta* function in the *haven* package. The *haven* package is installed along with the *tidyverse* package, though, it has to be loaded separately using the *library* function. If we had, as is very often the case, a csv file, we could use the *readr* package which is a core package in *tidyverse* and would not have to be loaded separately. 
+
+```{r}
+library(tidyverse)
+library(haven) # package for stata files
+wtp_lpg <- read_dta("data/wtp_lpg.dta")
+```
+
+
+There are various ways of a first look at the data, listed below, but we suppress the output here.  
+
+```{r,eval = F}
+wtp_lpg
+head(wtp_lpg)
+glimpse(wtp_lpg)
+```
+
+An outcome variable is the willingness to pay (WTP) for LPG (*wtp_lpg*). We will see how the mean varies with treatment. 
+
+```{r,message = F}
+# x%>% f(y) is the same as f(x,y)
+wtp_lpg %>% #1
+  select("wtp_lpg", "treatment") %>% #2
+  na.omit %>% #3
+  group_by(treatment) %>% #4
+  summarize(mean_wtp = mean(wtp_lpg)) #5
+```
+
+What we did was:
+
+ * Take the data,
+ * select variables from it,
+ * remove observations with missing data,
+ * group by treatment and control,
+ * calculate the mean of WTP for LPG for each group. 
+
+We now plot the data, with *treatment* on the x axis and *wtp_lp* for lpg on the y axis (Figure \ref{fig:wtp}). 
+
+```{r,fig.width = 3, fig.height = 2, warning = F, message = F, fig.cap = "\\label{fig:wtp}WTP for LPG by treatment group"}
+ggplot(wtp_lpg, aes(y = wtp_lpg,
+                    x = treatment)) +
+  geom_point()
+```
+
+
+We refine this basic figure  by adding jitter using *geom_jitter* and fitting a line using *geom_smooth* functions in *ggplot2* (figure \ref{fig:wtp1}).
+
+```{r,fig.width = 3, fig.height = 2, fig.cap = "\\label{fig:wtp1}WTP for LPG by treatment group", warning = F, message = F}
+ggplot(wtp_lpg, aes(y = wtp_lpg,
+                    x = treatment)) +
+  geom_jitter(width = 0.1, height = 0,
+              alpha = 0.3) +
+  geom_smooth(method = "lm", 
+              se = F) 
+```
+
+
+We will now generate some variables, that will be used for fitting a linear model. 
+
+```{r}
+# creating dummy or factor
+wtp_lpg <- wtp_lpg %>%
+  mutate(treatfac = factor(treatment))
+wtp_lpg <- wtp_lpg %>%
+  mutate(malefac = factor(male))
+wtp_lpg <- wtp_lpg %>%
+  mutate(maletr = 
+      factor(male * treatment))
+```
+
+We use regression to study the difference in average WTP for LPG between the treatment and control groups. In R, we can create an object that contains a variety of information related to the regression. We can access this information by printing the model or by using the summary function. Neither is satisfactory, giving too little and too much information respectively. 
+
+```{r,eval = F}
+# lm function for linear model
+mod1A <- lm(wtp_lpg ~ treatfac,
+            data = wtp_lpg)
+mod1A
+summary(mod1A)
+```
+
+The *texreg* package is handy for obtaining formatted tables of regression outputs, and we recommend its use even in preliminary work. Table \ref{tab:reg1} shows the results. 
+
+```{r, results = "asis", message = F}
+library(texreg) # for regression table
+mod1A <- lm(wtp_lpg ~ treatfac,
+             data = wtp_lpg)
+mod1B <- lm(wtp_lpg ~ treatfac + malefac +
+               treatfac*malefac,
+             data = wtp_lpg)
+texreg(list(mod1A, mod1B),
+       caption = "Effect of treatment",
+       caption.above = TRUE,
+       label = "tab:reg1",
+       ci.force = T, ci.test = NULL)
+```
+
+We can use the *estimatr* package for regression with robust standard errors; we have suppressed the output. 
+
+```{r, results = "asis", eval = F}
+library(estimatr)
+mod1A <- lm(wtp_lpg ~ treatfac,
+            data = wtp_lpg)
+mod1A2 <- lm_robust(wtp_lpg ~ treatfac,
+              clusters = villid,
+              data = wtp_lpg)
+texreg(list(mod1A, mod1A2),
+       caption = "Effect of treatment",
+       caption.above = TRUE,
+       ci.force = T, ci.test = NULL)
+```

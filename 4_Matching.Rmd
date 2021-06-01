@@ -1,0 +1,134 @@
+---
+title: "Matching"
+author: "Vikram Dayal and M Rahul"
+output: pdf_document
+---
+
+We will now look at a study that uses matching to study forest management in Uttarakhand state in India (Somanathan et al. 2009). Tropical forests were largely nationalized in the colonial era. In Uttarakhand, in 1930, after long protests, village councils were allowed to manage some forest areas. The paper examines the long term consequences of this decision. 
+
+After comparing costs between village-council managed forests and state forests, Somanathan et al. found (p. 4143):
+"The cost of administration in state forests is $> 7$ times as much as in council forests, reflecting the absence of bureaucracy in the councils and their greater flexibility in hiring watchmen."
+
+The authors then compare crown cover between state managed and village forests. They found historical evidence that state forest lands had more cover. They collected data on 217 villages and adjoining forests in 10 different areas. The key result of the paper is (p. 4143): `Village council management costs an order of magnitude less per unit area and does no worse, and possibly better, at conservation than state management.'
+
+The authors use very carefully gathered data, satellite image work, on ground survey etc., (with different disciplinary inputs), and also used the matching method. 
+
+We read in the data (can be downloaded from www.isid.ac.in/~som/data/data_and_programs_SPM_PNAS2009.zip) and follow the author's code(translating from STATA to R):
+
+```{r, message = F, warning = F}
+
+library(tidyverse)
+frd <- read_csv("data/cipfrfall_som.csv")
+```
+
+Some work with the data is required. 
+
+```{r, message = F}
+
+frd2 <- frd %>%
+  filter(cidum == 0, blarea_ha > 0.25, 
+         Nstock > 0)
+
+frd3 <- frd2 %>%
+  mutate(popdcu = popdsq * popdensity) %>%
+  select("ccbl", "rfdum", "blasp",
+         "popdensity", "Nstock", "popdsq",
+         "rdist") %>%
+  na.omit() %>%
+  mutate(vfdum = ifelse(rfdum == 1,0,1),
+         aspect = blasp)
+```
+
+We look at a sample of the data. 
+
+```{r, warning = F}
+# showing sample of data
+pick <- sample(x = nrow(frd3), 10, replace = F)
+library(knitr)
+frd3[pick,] %>%
+  select("ccbl","vfdum","aspect",
+         "popdensity", "Nstock") %>%
+  arrange(aspect) %>%
+  kable(digits = 2)
+```
+
+We plot a figure to study multivariate balance (Figure \ref{fig:bal}).
+
+```{r, fig.width = 5, fig.height = 3, fig.cap = "\\label{fig:bal}Multivariate balance of covariates with respect to village forest dummy"}
+ggplot(frd3, aes(x = aspect, y = popdensity,
+                 col = factor(vfdum))) +
+  geom_point() +
+  facet_wrap(~ factor(cut(Nstock,9))) +
+  theme_bw()
+```
+
+We now do matching using the *MatchIt* package, and use the coarsened exact matching technique^[see Iacus et al. (2009) and King and Nielsen et al. (2019) on matching.].
+
+```{r, message = F, warning=F, eval = F}
+library(MatchIt)
+
+bl_match_cem <- matchit(vfdum ~ aspect + 
+          popdensity + Nstock, 
+          method = "cem", 
+            discard = "treat" , 
+          data = frd3)
+matched_cem<- match.data(bl_match_cem)
+```
+
+
+
+
+```{r, message = F, warning=F, include = F}
+library(MatchIt)
+
+bl_match_cem <- matchit(vfdum ~ aspect + 
+          popdensity + Nstock, 
+          method = "cem", #pop.size = 200,
+            discard = "treat" , 
+          #cutpoints = list(blasp = 4,
+          #popdensity = 4, Nstock = 4),
+            data = frd3)
+
+```
+
+```{r, include = F}
+matched_cem<- match.data(bl_match_cem)
+```
+
+We use the cobalt package for a plot of univariate balance before and after matching (Figure \ref{fig:bal1}). 
+
+
+```{r,message = F, fig.width = 4, fig.height=3, echo = F, fig.cap = "\\label{fig:bal1}Balance plot"}
+library(cobalt)
+love.plot(bl_match_cem, drop.distance = TRUE)
+```
+
+Multivariate balance has also improved. 
+
+```{r, fig.width = 5, fig.height = 3, echo = F, fig.cap = "After matching"}
+ggplot(matched_cem, aes(x = aspect, y = popdensity,                 
+  col = factor(vfdum))) +
+  geom_point() +
+  facet_wrap(~ factor(cut(Nstock,4))) +
+  theme_bw()
+```
+
+We use matching to prune data to reduce extrapolation beyond support of data, model dependence. The coefficient of vfdum varies less across specifications with matched data (Models 3 and 4) than with unmatched data (Models 1 and 2) (Table \ref{tab:crown}).
+
+```{r,results="asis", echo = F, message=F, warning = F}
+library(texreg)
+
+mod1 <- lm(ccbl ~ vfdum, data = frd3)
+mod2 <- lm(ccbl ~ vfdum + aspect + popdensity + Nstock, data = frd3)
+mod2B <- lm(ccbl ~ vfdum + aspect + popdensity + Nstock + popdsq, data = frd3)
+mod3 <- lm(ccbl ~ vfdum , data = matched_cem)
+mod4 <- lm(ccbl ~ vfdum + aspect + popdensity +
+     Nstock, data = matched_cem)
+mod4B <- lm(ccbl ~ vfdum + aspect + popdensity + Nstock + popdsq, data = matched_cem)
+
+texreg(list(mod2, mod2B,mod4,
+            mod4B), include.rsquared = FALSE, include.adjrs = FALSE,
+       caption = "Crown Cover",
+       label = "tab:crown",
+       caption.above = TRUE)
+```

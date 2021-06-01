@@ -1,0 +1,179 @@
+---
+title: "Basic R"
+author: "Vikram Dayal and M Rahul"
+output: pdf_document
+ 
+---
+
+# Introduction
+
+
+"Doing" economics as a part of learning economics has been well recognised in the economics education literature (Bartlett and King (1990), Siegfried et al.(1991),  Hansen (2001)). Its importance has increased with the access to cheaper and greater computing power and availability of open and public datasets at both international as well as national levels, over the years. Furthermore, there is an increasing emphasis on transparency, reproducability as well as collaborativeness of scientific methods used in studying various economic phenomena. This has led to an increasing demand for open data science tools. R is an open source software that is well known for its data analysis capabilities^[See Lowndes et al. (2017) for an account of how R and other open source software were used to improve reproducibility.]. This document aims to introduce R for those wanting to use it for environmental economics. We look at several examples in environmental economics ranging from forests to air pollution, and looking at the biologically invasive coronavirus. The different examples use various research methods. We cover examples using experiments and matching. We also see how we can use statistical simulation to understand statistical inference better. We then see how we can use simulation to study dynamics. However, the focus is on how R works. We begin at a very basic level with vectors and dataframes. R is excellent and well known for its wrangling and graphing capabilities, and we cover this aspect at some length. We show how simple models can be estimated with R. Finally, we introduce for loops, illustrating how a little 'for' can go far. The different examples illustrate the versatility of R in executing varied tasks that a student or researcher in the area of environmental economics may wish to undertake and can guide the inclusion of R in an undergraduate environmental economics course or a first year graduate course.
+
+# RStudio and R
+
+For someone using a statistical software like Stata or E-Views, providing a user-friendly interface and commands that can be run from menus and dialogue  boxes, R, in the first instance could be intimidating. RStudio provides an user-friendly interface for R users by providing some essential services. 
+
+There are basically 4 quadrants in the RStudio interface (Figure \ref{RStudio}). The top-right quadrant shows all the active objects such as the dataframes created etc. appear in this screen under the "Environment" tab. When the "Environment" tab is selected, we can use the "Import Dataset" button to import data from other formats such as CSV, xls or dta formats into R. The "History" tab shows us the commands that have been previously run by us. The bottom right quadrant shows the files and folders in the current working directory when "Files" tab is selected. Any graphs generated while using R are also displayed in this quadrant under the "Plots" tab. The "Packages" tab show the currently installed packages in the R system. It also provides utilities to update the packages and install new packages. Help documentation for the installed packages are displayed under the "Help" tab. The bottom left quadrant shows the "Console". Here, you can run commands and see your output of the commands you run. The top left quadrant displays the R script file when it is open. R script is a text file where you can save your R commands. 	
+
+With familiarity of these basic aspects of the RStudio interface, one can quite efficiently navigate R.   
+
+![RStudio \label{RStudio}](R_studio_screen.pdf)
+
+
+# Basic R
+
+## Scalars, vectors and dataframes
+
+We start in R with scalars, vectors and dataframes^[For a more detailed treatment of R, see Dayal (2020) and Grolemund and Wickham (2017).]. We will start with a simple model in the text by Tietenberg and Lewis (2018) about when to harvest a stand of trees for forests. This model combines some simple economics with measured forest growth. The tree growth volume is based on measurements in a stand of Douglas fir forests. 
+
+We will use *r* as the rate of discount for the person who will harvest the timber. In R, we create objects as below. Once the object is created, we can do something with it, or print it. It may be noted that anything following a *#* is treated as a comment and therefore not executed by R. 
+
+```{r}
+# use # for comments
+# discount rate
+r <- 0.02 # create object
+r * 100 # print object
+```
+
+We assume the price of timber is 1 and does not change over the time period considered.
+
+
+```{r, error=TRUE}
+Price <- 1
+# price will give error; case sensitive
+price
+Price
+```
+
+
+We will now input measurements of the volume of timber in cubic feet done at different ages of the stand. We first create a vector *Age* as follows.
+
+```{r}
+Age <- c(10,20,30,40,50,60,68,70,
+         80,90,100,110,120,130,135)
+Age
+```
+
+
+We can extract the first three elements of *Age* as follows. 
+
+```{r}
+Age[1:3]
+# use [ ] with index to extract elements
+```
+
+
+What we just did is really important. Also note the use of parentheses for enclosing the elements of the vector, and the use of brackets for extracting elements of the vector. We can further extract the second, fifth, and seventh elements as follows. 
+
+```{r}
+Age[c(2,5,7)]
+```
+
+
+We now input the measurements of volume into *Volume*.
+
+```{r}
+Volume <- c(694,1912,3558,5536,7750,10104,
+            12023,12502,14848,17046,
+            19000, 20614,21792,22438,
+            22514)
+Volume
+
+```
+
+We calculate the discounted value of the timber if it were harvested at the different ages.
+
+```{r}
+Value <- Price * Volume / (1 + r) ^ Age
+Value
+```
+
+
+
+The cost consists of cost of planting and harvesting. 
+
+```{r}
+Cost <- 1000 + ((0.3*Volume)/(1+r)^Age)
+Cost
+```
+
+
+
+The net benefits are the value minus the costs. 
+
+```{r}
+Net_benefits <- Value-Cost
+Net_benefits
+```
+
+
+We can use the *max* function to see the maximum value of net benefits possible. 
+
+```{r}
+max(Net_benefits)
+```
+
+
+We now create a data frame using the different vectors we have created. A data frame has different variables in the columns and rows in the observations. 
+
+```{r}
+# create data frame
+Forest_data <- data.frame(Age, Volume,
+                        Value, Cost, Net_benefits)
+```
+
+
+We can view the top rows of our data frame with the head function. 
+
+
+```{r}
+head(Forest_data)
+```
+
+So far, we have used R by itself. But a strength of R is that we can use packages that have been contributed by a number of people. One such package is the *tidyverse* package, which we find useful to work with data and graph it. The *tidyverse* package itself is built on several other packages such as *ggplot2*, *dplyr*, *tidyr* etc that help us on different tasks such as graphing, data manipulation, data cleaning etc.  A package has to be installed in R once, and then each time we work with a package we can load it with the *library* function. We can install packages with a command or by using the 'Packages' tab in RStudio. 
+
+```{r}
+# install package only once
+#install.packages("tidyverse")
+library(tidyverse) # load package
+```
+
+We will now use the *filter* function in tidyverse to select the observation in our data frame which satisfies the condition of maximum net benefits. 
+
+```{r}
+Forest_data %>%
+  filter(Net_benefits == max(Net_benefits))
+# command above and below are equivalent
+filter(Forest_data, Net_benefits == max(Net_benefits))
+```
+
+
+
+We can read the code above as saying: take the data frame then filter according to the condition specified. 
+
+We will now create a line plot of volume against age. We need to provide the variables and the data frame as inputs, and tell the ggplot function what type of graphical object or geom we want, here, a line. 
+
+```{r fig_vol_age,fig.width = 4, fig.height = 3, fig.cap = "\\label{fig:fig_vol_age}Volume versus age"}
+# figure volume versus age
+ggplot(Forest_data, aes(x = Age,
+          y = Volume)) +
+  geom_line()
+```
+
+
+We see that volume grows slowly, then more rapidly and then slowly again, but keeps increasing (Figure \ref{fig:fig_vol_age}). 
+
+We now plot net benefits against age. We see that the net benefits are highest at age 68. So because of discounting we will not wait for timber volume to be maximized, but will clear the stand before that. Even so, we wait for 68 years! (Figure \ref{fig:fig_net_ben}) 
+
+```{r fig_net_ben, fig.width = 4, fig.height = 3, fig.cap = "\\label{fig:fig_net_ben}Net benefits versus age"}
+
+ggplot(Forest_data, aes(x = Age,
+                y = Net_benefits)) +
+  geom_line()
+```
+
+
+Tietenberg and Lewis (2018) show a derivation of the optimal time to cut using calculus. There are a number of ways we can further build on the model, and we can also examine non-timber uses of the forest. But the simple model captures some basic elements of resource economics. And seeing the model with numbers can be helpful in understanding. 
+
+This is also a starting point for working with R--we have used scalars, vectors and data frames in R. 
