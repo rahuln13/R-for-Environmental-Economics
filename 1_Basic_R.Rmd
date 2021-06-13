@@ -5,10 +5,6 @@ output: pdf_document
  
 ---
 
-# Introduction
-
-
-"Doing" economics as a part of learning economics has been well recognised in the economics education literature (Bartlett and King (1990), Siegfried et al.(1991),  Hansen (2001)). Its importance has increased with the access to cheaper and greater computing power and availability of open and public datasets at both international as well as national levels, over the years. Furthermore, there is an increasing emphasis on transparency, reproducability as well as collaborativeness of scientific methods used in studying various economic phenomena. This has led to an increasing demand for open data science tools. R is an open source software that is well known for its data analysis capabilities^[See Lowndes et al. (2017) for an account of how R and other open source software were used to improve reproducibility.]. This document aims to introduce R for those wanting to use it for environmental economics. We look at several examples in environmental economics ranging from forests to air pollution, and looking at the biologically invasive coronavirus. The different examples use various research methods. We cover examples using experiments and matching. We also see how we can use statistical simulation to understand statistical inference better. We then see how we can use simulation to study dynamics. However, the focus is on how R works. We begin at a very basic level with vectors and dataframes. R is excellent and well known for its wrangling and graphing capabilities, and we cover this aspect at some length. We show how simple models can be estimated with R. Finally, we introduce for loops, illustrating how a little 'for' can go far. The different examples illustrate the versatility of R in executing varied tasks that a student or researcher in the area of environmental economics may wish to undertake and can guide the inclusion of R in an undergraduate environmental economics course or a first year graduate course.
 
 # RStudio and R
 
@@ -177,3 +173,11 @@ ggplot(Forest_data, aes(x = Age,
 Tietenberg and Lewis (2018) show a derivation of the optimal time to cut using calculus. There are a number of ways we can further build on the model, and we can also examine non-timber uses of the forest. But the simple model captures some basic elements of resource economics. And seeing the model with numbers can be helpful in understanding. 
 
 This is also a starting point for working with R--we have used scalars, vectors and data frames in R. 
+
+# References
+
+Dayal V., 2020. Quantitative Economics with R. Springer.
+
+Tietenberg T, Lewis L. 2018. Environmental and Natural Resource Economics. Routledge.
+
+Wickham, H. and Grolemund, G., 2016. R for data science: import, tidy, transform, visualize, and model data. O'Reilly Media, Inc..

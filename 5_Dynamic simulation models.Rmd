@@ -170,3 +170,13 @@ The basic model can be elaborated in different ways.
   * Explore mathematical properties: stability, see how dynamics change with parameters
   * Use for detailed predictions
   * Fit to data, likelihood or Bayesian approaches. 
+
+
+
+# References
+
+Dayal V. 2007. Social diversity and ecological complexity: How an invasive tree could affect diverse agents in the land of the tiger. Environment and Development Economics 12(04):553-571
+
+Perrings C, Williamson M, Barbier E B, Delfino D, Dalmazzone S, Shogren J, Simmons P, Watkinson A. Biological invasion risks and the public good: an economic perspective. 2002. Conservation ecology, Vol. 6, No. 1, 1, 06.200
+
+Stevens M H. 2010. A primer of ecology with R. Springer

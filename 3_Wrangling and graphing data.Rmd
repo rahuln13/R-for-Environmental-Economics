@@ -203,3 +203,10 @@ We can see in Figure \ref{fig:gap} that the gap between the backcheck and audit 
 ```{r}
 rm(data1, dat3B, dat4)
 ```
+
+
+# References
+
+Duflo E, Greenstone M, Pande R and Ryan N. 2013a. Truth-telling by third-party auditors and the response of polluting firms: experimental evidence from India. The Quarterly Journal of Economics (2013):1499-1545.
+
+Duflo E, Greenstone M, Pande R and Ryan N. 2013b. What does reputation buy? Differentiation in a market for third-party auditors. American Economic Review: Papers and Proceedings 103(3): 314-319

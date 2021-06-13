@@ -123,3 +123,12 @@ texreg(list(mod1A, mod1A2),
        caption.above = TRUE,
        ci.force = T, ci.test = NULL)
 ```
+
+
+# References
+
+Dayal V. 2014. The Environment in Economics and Development: Pluralist Extensions of Core Economic Models. Springer
+
+Zahno M, Michaelowa K, Dasgupta P, Sachdeva I. 2020. Health Awareness and the transition towards clean cooking fuels: Evidence from Rajasthan. Plos One 15(4): e0231931
+
+Jeuland M, Pattanayak S K, Bluffstone R. 2015. The Economics of Household Pollution. Annual Review of Resource Economics.

@@ -132,3 +132,11 @@ texreg(list(mod2, mod2B,mod4,
        label = "tab:crown",
        caption.above = TRUE)
 ```
+
+# References
+
+Iacus S M, King G, Porro G. 2009. CEM: Software for Coarsened Exact Matching. Journal of Statistical Software, 30.
+
+King  G and Nielsen R. 2019. “Why Propensity Scores Should Not Be Used for Matching.” Political Analysis, 27, 4, Pp. 435-454.
+
+Somanathan E, Prabhakar R, Mehta B S. 2009. Decentralization for cost-effective conservation. PNAS. 106(11): 4143-4147
