@@ -1,5 +1,5 @@
 ---
-title: "Environmental Economics with R"
+title: "R for Environmental Economics"
 tags:
   - R
   - environmental economics
