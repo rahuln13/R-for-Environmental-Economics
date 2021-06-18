@@ -10,16 +10,17 @@ tags:
   - matching
   - SIR model
 authors: 
-  - Vikram Dayal
+  - name: Vikram Dayal
     affiliation: 1 
-  - M Rahul
+  - name: M Rahul
     affiliation: 2
 affiliation:
-  - Institute of Economic Growth, New Delhi, India
+  - name: Institute of Economic Growth, New Delhi, India
     index: 1
-  - Indian Economic Service, Government of India, New Delhi, India
+  - name: Indian Economic Service, Government of India, New Delhi, India
+    index: 2
 date: 7 June 2021
-bibliography: paper.bib 
+bibliography: paper.bib
 ---
 
 # Summary
